@@ -67,7 +67,7 @@ git clone https://github.com/seu-usuario/jwt-auth-example.git
 
 2. **Navegue até o diretório do projeto**:
 ```bash
-cd jwt-auth-example
+cd JWTAuth
 ```
 3. **Instale as dependências**:
 ```bash
