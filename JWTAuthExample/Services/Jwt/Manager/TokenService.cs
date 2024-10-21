@@ -1,4 +1,5 @@
 ﻿using JWTAuthExample.Models;
+using JWTAuthExample.Services.Jwt.Interfaces;
 using JWTAuthExample.Services.Jwt.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -7,7 +8,7 @@ using System.Security.Principal;
 
 namespace JWTAuthExample.Services.Jwt.Manager
 {
-    public class TokenService
+    public class TokenService : ITokenService
     {
         public class CredentialToken
         {
@@ -22,14 +23,14 @@ namespace JWTAuthExample.Services.Jwt.Manager
         public CredentialToken GenerateToken(User userIdentity, TokenConfigurations tokenConfigurations, SigningConfigurations signingConfigurations)
         {
             ClaimsIdentity identity = new ClaimsIdentity(
-                new GenericIdentity(userIdentity.Id, "Login"),
+                new GenericIdentity(userIdentity.Username, "Login"),
                 new[] {
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-                    new Claim(JwtRegisteredClaimNames.UniqueName, userIdentity.Id)
+                    new Claim(JwtRegisteredClaimNames.UniqueName, userIdentity.Username)
                 }
             );
 
-            int seconds = 1200;
+            int seconds = 1800;
             DateTime created = DateTime.Now;
             DateTime expiration = created + TimeSpan.FromSeconds(seconds);
 
