@@ -1,8 +1,8 @@
-﻿using JWTAuthExample.Models;
-using JWTAuthExample.Services.Jwt.Models;
-using static JWTAuthExample.Services.Jwt.Manager.TokenService;
+﻿using JWTAuth.Models;
+using JWTAuth.Services.Jwt.Models;
+using static JWTAuth.Services.Jwt.Manager.TokenService;
 
-namespace JWTAuthExample.Services.Jwt.Interfaces
+namespace JWTAuth.Services.Jwt.Interfaces
 {
     public interface ITokenService
     {

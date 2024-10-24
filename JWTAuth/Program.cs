@@ -1,9 +1,9 @@
-using JWTAuthExample.DataContext;
-using JWTAuthExample.Models;
-using JWTAuthExample.Services.Jwt;
-using JWTAuthExample.Services.Jwt.Interfaces;
-using JWTAuthExample.Services.Jwt.Manager;
-using JWTAuthExample.Services.Jwt.Models;
+using JWTAuth.DataContext;
+using JWTAuth.Models;
+using JWTAuth.Services.Jwt;
+using JWTAuth.Services.Jwt.Interfaces;
+using JWTAuth.Services.Jwt.Manager;
+using JWTAuth.Services.Jwt.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;

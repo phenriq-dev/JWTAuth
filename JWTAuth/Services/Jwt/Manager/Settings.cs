@@ -1,11 +1,11 @@
-﻿using JWTAuthExample.Models;
-using JWTAuthExample.Services.Jwt.Models;
+﻿using JWTAuth.Models;
+using JWTAuth.Services.Jwt.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Principal;
 
-namespace JWTAuthExample.Services.Jwt.Manager
+namespace JWTAuth.Services.Jwt.Manager
 {
     public static class Settings
     {

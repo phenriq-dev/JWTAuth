@@ -1,8 +1,8 @@
-﻿using JWTAuthExample.Models;
+﻿using JWTAuth.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace JWTAuthExample.DataContext
+namespace JWTAuth.DataContext
 {
     public partial class DataContext : DbContext
     {
