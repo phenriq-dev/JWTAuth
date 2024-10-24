@@ -1,5 +1,5 @@
 
-# JWT Authentication Example - ASP.NET Core
+# JWT Authentication API - ASP.NET Core
 
   
 
