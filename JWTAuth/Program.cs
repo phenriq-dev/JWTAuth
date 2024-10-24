@@ -1,10 +1,11 @@
-using JWTAuth.DataContext;
-using JWTAuth.Models;
-using JWTAuth.Services.Jwt;
-using JWTAuth.Services.Jwt.Interfaces;
-using JWTAuth.Services.Jwt.Manager;
-using JWTAuth.Services.Jwt.Models;
+using JWTAuth.Core.Interfaces;
+using JWTAuth.Core.Services.Jwt;
+using JWTAuth.Core.Services.Jwt.Manager;
+using JWTAuth.Core.Services.Jwt.Models;
+using JWTAuth.Db.DataContext;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -16,6 +17,7 @@ var tokenConfigurations = builder.Configuration.GetSection("TokenConfigurations"
 builder.Services.AddSingleton(signingConfigurations);
 builder.Services.AddSingleton(tokenConfigurations);
 builder.Services.AddSingleton<ITokenService, TokenService>();
+
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 builder.Services.AddCors();

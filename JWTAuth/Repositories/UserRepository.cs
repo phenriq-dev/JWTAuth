@@ -1,4 +1,4 @@
-﻿using JWTAuth.Models;
+﻿using JWTAuth.Entities;
 using Microsoft.AspNetCore.Identity;
 
 public static class UserRepository

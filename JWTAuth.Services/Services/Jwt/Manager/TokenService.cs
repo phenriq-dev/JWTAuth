@@ -1,12 +1,12 @@
-﻿using JWTAuth.Models;
-using JWTAuth.Services.Jwt.Interfaces;
-using JWTAuth.Services.Jwt.Models;
+﻿using JWTAuth.Core.Interfaces;
+using JWTAuth.Core.Services.Jwt.Models;
+using JWTAuth.Entities;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Principal;
 
-namespace JWTAuth.Services.Jwt.Manager
+namespace JWTAuth.Core.Services.Jwt.Manager
 {
     public class TokenService : ITokenService
     {
@@ -53,7 +53,7 @@ namespace JWTAuth.Services.Jwt.Manager
                 created = created.ToString("yyyy-MM-dd HH:mm:ss"),
                 expiration = expiration.ToString("yyyy-MM-dd HH:mm:ss"),
                 accessToken = token,
-                refreshToken = Guid.NewGuid().ToString().Replace("-", String.Empty) + userIdentity.Id.ToString(),
+                refreshToken = Guid.NewGuid().ToString().Replace("-", string.Empty) + userIdentity.Id.ToString(),
                 message = "OK"
             };
 

@@ -1,8 +1,7 @@
-﻿using JWTAuth.Models;
-using JWTAuth.Services.Jwt;
-using JWTAuth.Services.Jwt.Interfaces;
-using JWTAuth.Services.Jwt.Manager;
-using JWTAuth.Services.Jwt.Models;
+﻿using JWTAuth.Core.Interfaces;
+using JWTAuth.Core.Services.Jwt;
+using JWTAuth.Core.Services.Jwt.Models;
+using JWTAuth.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JWTAuth.Controllers
@@ -32,7 +31,7 @@ namespace JWTAuth.Controllers
 
         [HttpPost]
         [Route("login")]
-        public async Task<ActionResult<dynamic>> Authenticate([FromBody] User model)
+        public async Task<ActionResult<dynamic>> Authenticate([FromBody] Entities.User model)
         {
             var user = UserRepository.Get(model.Username, model.Password);
 

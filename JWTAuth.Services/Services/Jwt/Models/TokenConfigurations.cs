@@ -1,4 +1,4 @@
-﻿namespace JWTAuth.Services.Jwt.Models
+﻿namespace JWTAuth.Core.Services.Jwt.Models
 {
     public class TokenConfigurations
     {
