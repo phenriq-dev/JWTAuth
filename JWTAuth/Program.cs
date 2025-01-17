@@ -1,4 +1,5 @@
 using JWTAuth.Core.Interfaces;
+using JWTAuth.Core.Services;
 using JWTAuth.Core.Services.Jwt;
 using JWTAuth.Core.Services.Jwt.Manager;
 using JWTAuth.Core.Services.Jwt.Models;
@@ -17,6 +18,14 @@ var tokenConfigurations = builder.Configuration.GetSection("TokenConfigurations"
 builder.Services.AddSingleton(signingConfigurations);
 builder.Services.AddSingleton(tokenConfigurations);
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddTransient(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
+
+builder.Services.AddEntityFrameworkNpgsql()
+                .AddDbContext<DataContext>(
+                    options => options.UseNpgsql(
+                        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();

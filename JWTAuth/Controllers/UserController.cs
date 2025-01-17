@@ -1,7 +1,10 @@
 ﻿using JWTAuth.Core.Interfaces;
+using JWTAuth.Core.Services;
 using JWTAuth.Core.Services.Jwt;
 using JWTAuth.Core.Services.Jwt.Models;
 using JWTAuth.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JWTAuth.Controllers
@@ -12,15 +15,21 @@ namespace JWTAuth.Controllers
         private readonly SigningConfigurations _signingConfigurations;
         private readonly TokenConfigurations _tokenConfigurations;
         private readonly ITokenService _tokenService;
+        private readonly IGenericRepository<Entities.User, Models.User> _userRepository;
+        private readonly IPasswordHasher _passwordHasher;
 
         public UserController(
             SigningConfigurations signingConfigurations,
             TokenConfigurations tokenConfigurations,
+            IGenericRepository<Entities.User, Models.User> userRepository,
+            IPasswordHasher passwordHasher,
             ITokenService tokenService)
         {
             _signingConfigurations = signingConfigurations;
             _tokenConfigurations = tokenConfigurations;
             _tokenService = tokenService;
+            _userRepository = userRepository;
+            _passwordHasher = passwordHasher;
         }
 
         [HttpGet]
@@ -31,20 +40,27 @@ namespace JWTAuth.Controllers
 
         [HttpPost]
         [Route("login")]
-        public async Task<ActionResult<dynamic>> Authenticate([FromBody] Entities.User model)
+        public async Task<ActionResult<dynamic>> Authenticate([FromBody] LoginCredentials credentials)
         {
-            var user = UserRepository.Get(model.Username, model.Password);
+            var userModel = _userRepository.FindBy(c => c.Username == credentials.Username).FirstOrDefault();
 
-            if (user == null)
+            if (userModel == null || !_passwordHasher.VerifyPassword(userModel.Password, credentials.Password))
                 return NotFound(new { message = "Usuário ou senha inválidos" });
 
-            var token = _tokenService.GenerateToken(user, _tokenConfigurations, _signingConfigurations);
+            var userEntity = new Entities.User
+            {
+                Id = userModel.Id,
+                Username = userModel.Username,
+                Password = userModel.Password
+            };
 
-            user.Password = "";
+            var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations);
+
+            userModel.Password = "";
 
             return new
             {
-                user = user,
+                user = userModel,
                 token = token
             };
         }
