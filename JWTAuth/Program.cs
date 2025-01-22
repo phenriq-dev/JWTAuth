@@ -3,9 +3,10 @@ using JWTAuth.Core.Services;
 using JWTAuth.Core.Services.Jwt;
 using JWTAuth.Core.Services.Jwt.Manager;
 using JWTAuth.Core.Services.Jwt.Models;
-using JWTAuth.Db.DataContext;
+using JWTAuth.Db.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -21,11 +22,13 @@ builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddTransient(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
+builder.Services.AddDbContext<DataContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.ConfigureWarnings(warnings =>
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+});
 
-builder.Services.AddEntityFrameworkNpgsql()
-                .AddDbContext<DataContext>(
-                    options => options.UseNpgsql(
-                        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
@@ -60,6 +63,12 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+    dbContext.Database.Migrate();
 }
 
 app.UseHttpsRedirection();

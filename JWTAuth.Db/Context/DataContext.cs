@@ -1,15 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using JWTAuth.Entities;
+﻿using JWTAuth.Entities;
+using Microsoft.EntityFrameworkCore;
 
-namespace JWTAuth.Db.DataContext
+namespace JWTAuth.Db.Context
 {
-    public partial class DataContext : DbContext
+    public class DataContext : DbContext
     {
-        public DbSet<User> Users { get; set; }
-        public DataContext(DbContextOptions<DataContext> options)
-            : base(options)
-        {
-        }
-    }
+        public DataContext(DbContextOptions<DataContext> options) : base(options) { }
 
+        public DbSet<User> User { get; set; }
+    }
 }

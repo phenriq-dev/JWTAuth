@@ -53,7 +53,7 @@ namespace JWTAuth.Core.Services.Jwt.Manager
                 created = created.ToString("yyyy-MM-dd HH:mm:ss"),
                 expiration = expiration.ToString("yyyy-MM-dd HH:mm:ss"),
                 accessToken = token,
-                refreshToken = Guid.NewGuid().ToString().Replace("-", string.Empty) + userIdentity.Id.ToString(),
+                refreshToken = Guid.NewGuid().ToString().Replace("-", string.Empty) + userIdentity.UserId.ToString(),
                 message = "OK"
             };
 

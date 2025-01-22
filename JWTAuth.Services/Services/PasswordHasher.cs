@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using JWTAuth.Core.Interfaces;
-using JWTAuth.Db.DataContext;
+using JWTAuth.Db.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using System.Linq.Dynamic.Core;

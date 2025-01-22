@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JWTAuth.Controllers
 {
     [Route("/account")]
+    [ApiController]
     public class UserController : Controller
     {
         private readonly SigningConfigurations _signingConfigurations;
@@ -40,6 +41,7 @@ namespace JWTAuth.Controllers
 
         [HttpPost]
         [Route("login")]
+        [AllowAnonymous]
         public async Task<ActionResult<dynamic>> Authenticate([FromBody] LoginCredentials credentials)
         {
             var userModel = _userRepository.FindBy(c => c.Username == credentials.Username).FirstOrDefault();
@@ -49,7 +51,7 @@ namespace JWTAuth.Controllers
 
             var userEntity = new Entities.User
             {
-                Id = userModel.Id,
+                UserId = userModel.Id,
                 Username = userModel.Username,
                 Password = userModel.Password
             };
@@ -63,6 +65,23 @@ namespace JWTAuth.Controllers
                 user = userModel,
                 token = token
             };
+        }
+
+        [HttpGet]
+        [Authorize]
+        [Route("profile")]
+        public IActionResult GetUserProfile()
+        {
+            var username = User.Identity.Name;
+
+            var user = _userRepository.FindBy(c => c.Username == username).FirstOrDefault();
+
+            if (user == null)
+                return NotFound(new { message = "Usuário não encontrado" });
+
+            user.Password = "";
+
+            return Ok(user);
         }
     }
 }
