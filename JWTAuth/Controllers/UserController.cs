@@ -1,10 +1,8 @@
 ﻿using JWTAuth.Core.Interfaces;
-using JWTAuth.Core.Services;
 using JWTAuth.Core.Services.Jwt;
 using JWTAuth.Core.Services.Jwt.Models;
 using JWTAuth.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JWTAuth.Controllers
@@ -18,19 +16,22 @@ namespace JWTAuth.Controllers
         private readonly ITokenService _tokenService;
         private readonly IGenericRepository<Entities.User, Models.User> _userRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ILogger<UserController> _logger;
 
         public UserController(
             SigningConfigurations signingConfigurations,
             TokenConfigurations tokenConfigurations,
             IGenericRepository<Entities.User, Models.User> userRepository,
             IPasswordHasher passwordHasher,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            ILogger<UserController> logger)
         {
             _signingConfigurations = signingConfigurations;
             _tokenConfigurations = tokenConfigurations;
             _tokenService = tokenService;
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -44,28 +45,37 @@ namespace JWTAuth.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<dynamic>> Authenticate([FromBody] LoginCredentials credentials)
         {
-            var userModel = _userRepository.FindBy(c => c.Username == credentials.Username).FirstOrDefault();
-
-            if (userModel == null || !_passwordHasher.VerifyPassword(userModel.Password, credentials.Password))
+            try
             {
-                return NotFound(new { message = "Usuário ou senha inválidos" });
+                var userModel = _userRepository.FindBy(c => c.Username == credentials.Username).FirstOrDefault();
+
+                if (userModel == null || !_passwordHasher.VerifyPassword(userModel.Password, credentials.Password))
+                {
+                    return NotFound(new { message = "Usuário ou senha inválidos" });
+                }
+
+                var userEntity = new Entities.User
+                {
+                    UserId = userModel.UserId,
+                    Username = userModel.Username
+                };
+
+                var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations);
+
+                userModel.Password = "";
+
+                return new
+                {
+                    user = userModel,
+                    token = token
+                };
+            }
+            catch (Exception ex) 
+            {
+                _logger.LogError(ex, "Erro ao autenticar o usuário.");
+                return StatusCode(500, new { message = "Ocorreu um erro ao processar sua solicitação." });
             }
 
-            var userEntity = new Entities.User
-            {
-                UserId = userModel.UserId,
-                Username = userModel.Username
-            };
-
-            var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations);
-
-            userModel.Password = "";
-
-            return new
-            {
-                user = userModel,
-                token = token
-            };
         }
 
         [HttpPost]
@@ -73,28 +83,36 @@ namespace JWTAuth.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<dynamic>> RegisterUser([FromBody] RegisterUser userModel)
         {
-            var existingUser = _userRepository.FindBy(c => c.Username == userModel.Username).FirstOrDefault();
-            if (existingUser != null)
+            try
             {
-                return BadRequest(new { message = "Nome de usuário já existe" });
+                var existingUser = _userRepository.FindBy(c => c.Username == userModel.Username).FirstOrDefault();
+                if (existingUser != null)
+                {
+                    return BadRequest(new { message = "Nome de usuário já existe" });
+                }
+
+                string hashedPassword = _passwordHasher.HashPassword(userModel.Password);
+
+                var newUser = new User
+                {
+                    Username = userModel.Username,
+                    Password = hashedPassword
+                };
+
+                _userRepository.Add(newUser);
+
+                newUser.Password = "";
+
+                return Ok(new
+                {
+                    user = newUser
+                });
             }
-
-            string hashedPassword = _passwordHasher.HashPassword(userModel.Password);
-
-            var newUser = new User
+            catch (Exception ex)
             {
-                Username = userModel.Username,
-                Password = hashedPassword
-            };
-
-            _userRepository.Add(newUser);
-
-            newUser.Password = "";
-
-            return Ok(new
-            {
-                user = newUser
-            });
+                _logger.LogError(ex, "Erro ao registrar o usuário.");
+                return StatusCode(500, new { message = "Ocorreu um erro ao processar sua solicitação." });
+            }
         }
 
 
@@ -103,16 +121,26 @@ namespace JWTAuth.Controllers
         [Authorize]
         public IActionResult GetUserProfile()
         {
-            var username = User.Identity.Name;
+            try
+            {
+                var username = User.Identity.Name;
 
-            var user = _userRepository.FindBy(c => c.Username == username).FirstOrDefault();
+                var user = _userRepository.FindBy(c => c.Username == username).FirstOrDefault();
 
-            if (user == null)
-                return NotFound(new { message = "Usuário não encontrado" });
+                if (user == null)
+                {
+                    return NotFound(new { message = "Usuário não encontrado" });
+                }
 
-            user.Password = "";
+                user.Password = "";
 
-            return Ok(user);
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao buscar o perfil do usuário.");
+                return StatusCode(500, new { message = "Ocorreu um erro ao processar sua solicitação." });
+            }
         }
     }
 }

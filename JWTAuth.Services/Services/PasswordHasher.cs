@@ -11,7 +11,6 @@ namespace JWTAuth.Core.Services
 
         public bool VerifyPassword(string hashedPassword, string password)
         {
-            // Verifica se a senha fornecida corresponde ao hash armazenado
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
     }
