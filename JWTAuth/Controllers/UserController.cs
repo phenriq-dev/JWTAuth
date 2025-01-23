@@ -43,15 +43,20 @@ namespace JWTAuth.Controllers
         [HttpPost]
         [Route("login")]
         [AllowAnonymous]
-        public async Task<ActionResult<dynamic>> Authenticate([FromBody] LoginCredentials credentials)
+        public async Task<ActionResult<ApiResponse<dynamic>>> Authenticate([FromBody] LoginCredentials credentials)
         {
             try
             {
-                var userModel = _userRepository.FindBy(c => c.Username == credentials.Username).FirstOrDefault();
+                var userModel = _userRepository.FindBy(c => c.Username.ToLower() == credentials.Username.ToLower()).FirstOrDefault();
 
                 if (userModel == null || !_passwordHasher.VerifyPassword(userModel.Password, credentials.Password))
                 {
-                    return NotFound(new { message = "Usuário ou senha inválidos" });
+                    return NotFound(new ApiResponse<dynamic>
+                    {
+                        Success = false,
+                        Message = "Usuário ou senha inválidos",
+                        Data = null
+                    });
                 }
 
                 var userEntity = new Entities.User
@@ -64,16 +69,26 @@ namespace JWTAuth.Controllers
 
                 userModel.Password = "";
 
-                return new
+                return Ok(new ApiResponse<dynamic>
                 {
-                    user = userModel,
-                    token = token
-                };
+                    Success = true,
+                    Message = "Autenticação realizada com sucesso",
+                    Data = new
+                    {
+                        user = userModel,
+                        token = token
+                    }
+                });
             }
             catch (Exception ex) 
             {
-                _logger.LogError(ex, "Erro ao autenticar o usuário.");
-                return StatusCode(500, new { message = "Ocorreu um erro ao processar sua solicitação." });
+                _logger.LogError(ex, "Erro ao autenticar o usuário");
+                return StatusCode(500, new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Erro interno no servidor",
+                    Error = ex.Message
+                });
             }
 
         }
@@ -85,10 +100,15 @@ namespace JWTAuth.Controllers
         {
             try
             {
-                var existingUser = _userRepository.FindBy(c => c.Username == userModel.Username).FirstOrDefault();
+                var existingUser = _userRepository.FindBy(c => c.Username.ToLower() == userModel.Username.ToLower()).FirstOrDefault();
                 if (existingUser != null)
                 {
-                    return BadRequest(new { message = "Nome de usuário já existe" });
+                    return BadRequest(new ApiResponse<dynamic>
+                    {
+                        Success = false,
+                        Message = "Nome de usuário já existe",
+                        Data = null
+                    });
                 }
 
                 string hashedPassword = _passwordHasher.HashPassword(userModel.Password);
@@ -103,15 +123,22 @@ namespace JWTAuth.Controllers
 
                 newUser.Password = "";
 
-                return Ok(new
+                return Ok(new ApiResponse<dynamic>
                 {
-                    user = newUser
+                    Success = true,
+                    Message = "Usuário registrado com sucesso",
+                    Data = newUser
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao registrar o usuário.");
-                return StatusCode(500, new { message = "Ocorreu um erro ao processar sua solicitação." });
+                _logger.LogError(ex, "Erro ao registrar usuário");
+                return StatusCode(500, new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Erro interno no servidor",
+                    Error = ex.Message
+                });
             }
         }
 
@@ -125,21 +152,36 @@ namespace JWTAuth.Controllers
             {
                 var username = User.Identity.Name;
 
-                var user = _userRepository.FindBy(c => c.Username == username).FirstOrDefault();
+                var user = _userRepository.FindBy(c => c.Username.ToLower() == username.ToLower()).FirstOrDefault();
 
                 if (user == null)
                 {
-                    return NotFound(new { message = "Usuário não encontrado" });
+                    return NotFound(new ApiResponse<dynamic>
+                    {
+                        Success = false,
+                        Message = "Usuário não encontrado",
+                        Data = null
+                    });
                 }
 
                 user.Password = "";
 
-                return Ok(user);
+                return Ok(new ApiResponse<dynamic>
+                {
+                    Success = true,
+                    Message = "Perfil do usuário recuperado com sucesso",
+                    Data = user
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao buscar o perfil do usuário.");
-                return StatusCode(500, new { message = "Ocorreu um erro ao processar sua solicitação." });
+                _logger.LogError(ex, "Erro ao recuperar perfil do usuário");
+                return StatusCode(500, new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Erro interno no servidor",
+                    Error = ex.Message
+                });
             }
         }
     }
