@@ -47,13 +47,14 @@ namespace JWTAuth.Controllers
             var userModel = _userRepository.FindBy(c => c.Username == credentials.Username).FirstOrDefault();
 
             if (userModel == null || !_passwordHasher.VerifyPassword(userModel.Password, credentials.Password))
+            {
                 return NotFound(new { message = "Usuário ou senha inválidos" });
+            }
 
             var userEntity = new Entities.User
             {
-                UserId = userModel.Id,
-                Username = userModel.Username,
-                Password = userModel.Password
+                UserId = userModel.UserId,
+                Username = userModel.Username
             };
 
             var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations);
@@ -67,9 +68,39 @@ namespace JWTAuth.Controllers
             };
         }
 
+        [HttpPost]
+        [Route("register")]
+        [AllowAnonymous]
+        public async Task<ActionResult<dynamic>> RegisterUser([FromBody] RegisterUser userModel)
+        {
+            var existingUser = _userRepository.FindBy(c => c.Username == userModel.Username).FirstOrDefault();
+            if (existingUser != null)
+            {
+                return BadRequest(new { message = "Nome de usuário já existe" });
+            }
+
+            string hashedPassword = _passwordHasher.HashPassword(userModel.Password);
+
+            var newUser = new User
+            {
+                Username = userModel.Username,
+                Password = hashedPassword
+            };
+
+            _userRepository.Add(newUser);
+
+            newUser.Password = "";
+
+            return Ok(new
+            {
+                user = newUser
+            });
+        }
+
+
         [HttpGet]
-        [Authorize]
         [Route("profile")]
+        [Authorize]
         public IActionResult GetUserProfile()
         {
             var username = User.Identity.Name;

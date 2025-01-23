@@ -20,7 +20,7 @@ builder.Services.AddSingleton(signingConfigurations);
 builder.Services.AddSingleton(tokenConfigurations);
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddTransient(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
-builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddDbContext<DataContext>(options =>
 {
@@ -48,7 +48,7 @@ builder.Services.AddAuthentication(x =>
     x.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Settings.Secret)),
+        IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidIssuer = tokenConfigurations.Issuer,
@@ -68,7 +68,6 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-    dbContext.Database.Migrate();
 }
 
 app.UseHttpsRedirection();
