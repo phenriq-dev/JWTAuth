@@ -26,11 +26,12 @@ namespace JWTAuth.Core.Services.Jwt.Manager
                 new GenericIdentity(userIdentity.Username, "Login"),
                 new[] {
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-                    new Claim(JwtRegisteredClaimNames.UniqueName, userIdentity.Username)
+                    new Claim(JwtRegisteredClaimNames.UniqueName, userIdentity.Username),
+                    new Claim("UserId", userIdentity.UserId.ToString())
                 }
             );
 
-            int seconds = 1800;
+            int seconds = tokenConfigurations.Seconds;
             DateTime created = DateTime.Now;
             DateTime expiration = created + TimeSpan.FromSeconds(seconds);
 

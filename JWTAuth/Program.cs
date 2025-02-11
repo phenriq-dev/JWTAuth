@@ -13,13 +13,18 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var signingConfigurations = new SigningConfigurations(Settings.Secret);
+var jwtSettings = builder.Configuration.GetSection("TokenConfigurations");
+var secretKey = jwtSettings["Secret"];
+
+var signingConfigurations = new SigningConfigurations(secretKey);
+
 var tokenConfigurations = builder.Configuration.GetSection("TokenConfigurations").Get<TokenConfigurations>();
 
 builder.Services.AddSingleton(signingConfigurations);
 builder.Services.AddSingleton(tokenConfigurations);
-builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddTransient(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
+
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddDbContext<DataContext>(options =>

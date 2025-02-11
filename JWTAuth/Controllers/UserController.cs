@@ -150,9 +150,21 @@ namespace JWTAuth.Controllers
         {
             try
             {
-                var username = User.Identity.Name;
+                var userIdClaim = User.FindFirst("UserId")?.Value;
 
-                var user = _userRepository.FindBy(c => c.Username.ToLower() == username.ToLower()).FirstOrDefault();
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    return Unauthorized(new ApiResponse<dynamic>
+                    {
+                        Success = false,
+                        Message = "Token inválido",
+                        Data = null
+                    });
+                }
+
+                var userId = long.Parse(userIdClaim);
+
+                var user = _userRepository.FindBy(c => c.UserId == userId).FirstOrDefault();
 
                 if (user == null)
                 {
