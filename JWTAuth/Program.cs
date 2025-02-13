@@ -8,9 +8,31 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.ConfigurationOptions = new ConfigurationOptions()
+    {
+        EndPoints = { { builder.Configuration["ConnectionStrings:DefaultRedisCache"] } },
+        Password = builder.Configuration["RedisPassword"],
+        CheckCertificateRevocation = false,
+        KeepAlive = 10,
+        ConnectTimeout = 5000,
+        ConnectRetry = 5,
+        SyncTimeout = 10000,
+    };
+});
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    // This lambda determines whether user consent for non-essential cookies is needed for a given request.
+    options.CheckConsentNeeded = context => false;
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+});
 
 var jwtSettings = builder.Configuration.GetSection("TokenConfigurations");
 var secretKey = jwtSettings["Secret"];

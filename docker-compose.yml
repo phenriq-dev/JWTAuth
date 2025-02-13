@@ -11,8 +11,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - CONNECTIONSTRINGS__DEFAULTCONNECTION=Host=db;Port=5432;Database=JWTAuthDb;Username=postgres;Password=MyPass@word
+      - REDIS__HOST=redis
+      - REDIS__PORT=6379
     depends_on:
       - db
+      - redis
     networks:
       - backend
 
@@ -24,6 +27,15 @@ services:
       POSTGRES_DB: JWTAuthDb
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:latest
+    environment:
+      - REDIS_PASSWORD=redis@password
+    ports:
+      - "6379:6379"
     networks:
       - backend
 

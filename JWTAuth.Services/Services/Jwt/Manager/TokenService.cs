@@ -1,26 +1,18 @@
 ﻿using JWTAuth.Core.Interfaces;
 using JWTAuth.Core.Services.Jwt.Models;
 using JWTAuth.Entities;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Principal;
+using System.Text.Json;
 
 namespace JWTAuth.Core.Services.Jwt.Manager
 {
     public class TokenService : ITokenService
     {
-        public class CredentialToken
-        {
-            public bool authenticated { get; set; }
-            public string created { get; set; }
-            public string expiration { get; set; }
-            public string accessToken { get; set; }
-            public string refreshToken { get; set; }
-            public string message { get; set; }
-        }
-
-        public CredentialToken GenerateToken(User userIdentity, TokenConfigurations tokenConfigurations, SigningConfigurations signingConfigurations)
+        public CredentialToken GenerateToken(User userIdentity, TokenConfigurations tokenConfigurations, SigningConfigurations signingConfigurations, IDistributedCache _cache, string refreshToken = null)
         {
             ClaimsIdentity identity = new ClaimsIdentity(
                 new GenericIdentity(userIdentity.Username, "Login"),
@@ -58,7 +50,66 @@ namespace JWTAuth.Core.Services.Jwt.Manager
                 message = "OK"
             };
 
+            var cacheOptions = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(seconds),
+                SlidingExpiration = TimeSpan.FromSeconds(seconds)
+            };
+
+            var refreshTokenData = new RefreshTokenData();
+            refreshTokenData.RefreshToken = result.refreshToken;
+            refreshTokenData.ID = userIdentity.UserId;
+
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                _cache.Remove(refreshToken);
+            }
+
+            _cache.SetString(result.refreshToken, JsonSerializer.Serialize(refreshTokenData), cacheOptions);
+
             return result;
         }
+
+        public async Task<CredentialToken> RefreshTokenAsync(User userIdentity, TokenConfigurations tokenConfigurations, SigningConfigurations signingConfigurations, IDistributedCache _cache, string refreshToken)
+        {
+            var cachedRefreshTokenData = await _cache.GetStringAsync(refreshToken);
+
+            if (string.IsNullOrEmpty(cachedRefreshTokenData))
+            {
+                throw new UnauthorizedAccessException("Invalid refresh token.");
+            }
+
+            var refreshTokenData = JsonSerializer.Deserialize<RefreshTokenData>(cachedRefreshTokenData);
+
+            if (refreshTokenData == null)
+                throw new UnauthorizedAccessException("Invalid refresh token data.");
+
+            if (refreshTokenData.ID == 0)
+                throw new UnauthorizedAccessException("Invalid user ID associated with refresh token.");
+
+            if (userIdentity == null)
+                throw new UnauthorizedAccessException("User not found.");
+
+            var newToken = GenerateToken(userIdentity, tokenConfigurations, signingConfigurations, _cache);
+
+            var newRefreshTokenData = new RefreshTokenData
+            {
+                RefreshToken = newToken.refreshToken,
+                ID = userIdentity.UserId
+            };
+
+            var cacheOptions = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenConfigurations.Seconds),
+                SlidingExpiration = TimeSpan.FromSeconds(tokenConfigurations.Seconds)
+            };
+
+            await _cache.SetStringAsync(newRefreshTokenData.RefreshToken, JsonSerializer.Serialize(newRefreshTokenData), cacheOptions);
+
+            newToken.refreshToken = newRefreshTokenData.RefreshToken;
+            return newToken;
+        }
+
+
     }
 }

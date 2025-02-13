@@ -4,6 +4,7 @@ using JWTAuth.Core.Services.Jwt.Models;
 using JWTAuth.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace JWTAuth.Controllers
 {
@@ -17,6 +18,7 @@ namespace JWTAuth.Controllers
         private readonly IGenericRepository<Entities.User, Models.User> _userRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ILogger<UserController> _logger;
+        private readonly IDistributedCache _cache;
 
         public UserController(
             SigningConfigurations signingConfigurations,
@@ -24,7 +26,8 @@ namespace JWTAuth.Controllers
             IGenericRepository<Entities.User, Models.User> userRepository,
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
-            ILogger<UserController> logger)
+            ILogger<UserController> logger,
+            IDistributedCache cache)
         {
             _signingConfigurations = signingConfigurations;
             _tokenConfigurations = tokenConfigurations;
@@ -32,6 +35,7 @@ namespace JWTAuth.Controllers
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _logger = logger;
+            _cache  = cache;
         }
 
 
@@ -60,9 +64,16 @@ namespace JWTAuth.Controllers
                     Username = userModel.Username
                 };
 
-                var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations);
+                var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations, _cache);
 
                 userModel.Password = "";
+
+                Response.Cookies.Append("AccessToken", token.accessToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddSeconds(_tokenConfigurations.Seconds)
+                });
 
                 return Ok(new ApiResponse<dynamic>
                 {
@@ -137,6 +148,45 @@ namespace JWTAuth.Controllers
             }
         }
 
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken(RefreshToken model)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                return Unauthorized(new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Token inválido",
+                    Data = null
+                });
+            }
+
+            var userId = long.Parse(userIdClaim);
+
+            var user = _userRepository.FindBy(c => c.UserId == userId).FirstOrDefault();
+
+            if (user == null)
+            {
+                return NotFound(new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Usuário não encontrado",
+                    Data = null
+                });
+            }
+
+            var userEntity = new Entities.User
+            {
+                UserId = user.UserId,
+                Username = user.Username
+            };
+
+            var refreshedToken = await _tokenService.RefreshTokenAsync(userEntity, _tokenConfigurations, _signingConfigurations, _cache, model.refreshToken);
+
+            return Ok(refreshedToken);
+        }
 
         [HttpGet]
         [Route("profile")]
@@ -191,5 +241,6 @@ namespace JWTAuth.Controllers
                 });
             }
         }
+
     }
 }
