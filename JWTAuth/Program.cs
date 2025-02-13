@@ -7,7 +7,6 @@ using JWTAuth.Db.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -23,7 +22,6 @@ var tokenConfigurations = builder.Configuration.GetSection("TokenConfigurations"
 builder.Services.AddSingleton(signingConfigurations);
 builder.Services.AddSingleton(tokenConfigurations);
 builder.Services.AddTransient(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
-
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
@@ -39,7 +37,7 @@ builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 builder.Services.AddCors();
 
-var key = Encoding.ASCII.GetBytes(Settings.Secret);
+var key = Encoding.ASCII.GetBytes(secretKey);
 
 builder.Services.AddAuthentication(x =>
 {
@@ -67,12 +65,12 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
 }
 
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+    //dbContext.Database.Migrate();
 }
 
 app.UseHttpsRedirection();

@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace JWTAuth.Core.Services.Jwt.Models
+namespace JWTAuth.Models
 {
-    public class LoginCredentials
+    public class Login
     {
-        public long Id { get; set; }
 
         [Required(ErrorMessage = "O nome de usuário é obrigatório")]
         public string Username { get; set; }
@@ -12,4 +11,5 @@ namespace JWTAuth.Core.Services.Jwt.Models
         [Required(ErrorMessage = "A senha é obrigatória")]
         public string Password { get; set; }
     }
+
 }

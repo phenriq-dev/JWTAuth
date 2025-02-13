@@ -34,16 +34,11 @@ namespace JWTAuth.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public IActionResult Index()
-        {
-            return View();
-        }
 
         [HttpPost]
         [Route("login")]
         [AllowAnonymous]
-        public async Task<ActionResult<ApiResponse<dynamic>>> Authenticate([FromBody] LoginCredentials credentials)
+        public async Task<ActionResult<ApiResponse<dynamic>>> Authenticate(Login credentials)
         {
             try
             {
@@ -96,7 +91,7 @@ namespace JWTAuth.Controllers
         [HttpPost]
         [Route("register")]
         [AllowAnonymous]
-        public async Task<ActionResult<dynamic>> RegisterUser([FromBody] RegisterUser userModel)
+        public async Task<ActionResult<dynamic>> RegisterUser(RegisterUser userModel)
         {
             try
             {
