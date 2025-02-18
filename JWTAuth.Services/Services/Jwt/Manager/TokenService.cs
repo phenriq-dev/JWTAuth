@@ -14,18 +14,21 @@ namespace JWTAuth.Core.Services.Jwt.Manager
     {
         public CredentialToken GenerateToken(User userIdentity, TokenConfigurations tokenConfigurations, SigningConfigurations signingConfigurations, IDistributedCache _cache, string refreshToken = null)
         {
+            var jti = Guid.NewGuid().ToString("N");
+
             ClaimsIdentity identity = new ClaimsIdentity(
                 new GenericIdentity(userIdentity.Username, "Login"),
-                new[] {
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-                    new Claim(JwtRegisteredClaimNames.UniqueName, userIdentity.Username),
-                    new Claim("UserId", userIdentity.UserId.ToString())
+                new[]
+                {
+                new Claim(JwtRegisteredClaimNames.Jti, jti),
+                new Claim(JwtRegisteredClaimNames.Sub, userIdentity.Username),
+                new Claim("UserId", userIdentity.UserId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
                 }
             );
 
-            int seconds = tokenConfigurations.Seconds;
-            DateTime created = DateTime.Now;
-            DateTime expiration = created + TimeSpan.FromSeconds(seconds);
+            DateTime created = DateTime.UtcNow;
+            DateTime expiration = created.AddSeconds(tokenConfigurations.Seconds);
 
             var handler = new JwtSecurityTokenHandler();
             var securityToken = handler.CreateToken(new SecurityTokenDescriptor
@@ -38,64 +41,17 @@ namespace JWTAuth.Core.Services.Jwt.Manager
                 Expires = expiration
             });
 
-            var token = handler.WriteToken(securityToken);
+            var accessToken = handler.WriteToken(securityToken);
+            var newRefreshToken = Guid.NewGuid().ToString("N") + userIdentity.UserId;
 
             CredentialToken result = new CredentialToken
             {
                 authenticated = true,
                 created = created.ToString("yyyy-MM-dd HH:mm:ss"),
                 expiration = expiration.ToString("yyyy-MM-dd HH:mm:ss"),
-                accessToken = token,
-                refreshToken = Guid.NewGuid().ToString().Replace("-", string.Empty) + userIdentity.UserId.ToString(),
+                accessToken = accessToken,
+                refreshToken = newRefreshToken,
                 message = "OK"
-            };
-
-            var cacheOptions = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(seconds),
-                SlidingExpiration = TimeSpan.FromSeconds(seconds)
-            };
-
-            var refreshTokenData = new RefreshTokenData();
-            refreshTokenData.RefreshToken = result.refreshToken;
-            refreshTokenData.ID = userIdentity.UserId;
-
-            if (!string.IsNullOrEmpty(refreshToken))
-            {
-                _cache.Remove(refreshToken);
-            }
-
-            _cache.SetString(result.refreshToken, JsonSerializer.Serialize(refreshTokenData), cacheOptions);
-
-            return result;
-        }
-
-        public async Task<CredentialToken> RefreshTokenAsync(User userIdentity, TokenConfigurations tokenConfigurations, SigningConfigurations signingConfigurations, IDistributedCache _cache, string refreshToken)
-        {
-            var cachedRefreshTokenData = await _cache.GetStringAsync(refreshToken);
-
-            if (string.IsNullOrEmpty(cachedRefreshTokenData))
-            {
-                throw new UnauthorizedAccessException("Invalid refresh token.");
-            }
-
-            var refreshTokenData = JsonSerializer.Deserialize<RefreshTokenData>(cachedRefreshTokenData);
-
-            if (refreshTokenData == null)
-                throw new UnauthorizedAccessException("Invalid refresh token data.");
-
-            if (refreshTokenData.ID == 0)
-                throw new UnauthorizedAccessException("Invalid user ID associated with refresh token.");
-
-            if (userIdentity == null)
-                throw new UnauthorizedAccessException("User not found.");
-
-            var newToken = GenerateToken(userIdentity, tokenConfigurations, signingConfigurations, _cache);
-
-            var newRefreshTokenData = new RefreshTokenData
-            {
-                RefreshToken = newToken.refreshToken,
-                ID = userIdentity.UserId
             };
 
             var cacheOptions = new DistributedCacheEntryOptions
@@ -104,9 +60,41 @@ namespace JWTAuth.Core.Services.Jwt.Manager
                 SlidingExpiration = TimeSpan.FromSeconds(tokenConfigurations.Seconds)
             };
 
-            await _cache.SetStringAsync(newRefreshTokenData.RefreshToken, JsonSerializer.Serialize(newRefreshTokenData), cacheOptions);
+            var refreshTokenData = new RefreshTokenData
+            {
+                RefreshToken = newRefreshToken,
+                ID = userIdentity.UserId
+            };
 
-            newToken.refreshToken = newRefreshTokenData.RefreshToken;
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                _cache.Remove($"refreshToken:{userIdentity.UserId}");
+            }
+
+            _cache.SetString($"refreshToken:{userIdentity.UserId}", JsonSerializer.Serialize(refreshTokenData), cacheOptions);
+
+            return result;
+        }
+
+        public async Task<CredentialToken> RefreshTokenAsync(
+            User userIdentity,
+            TokenConfigurations tokenConfigurations,
+            SigningConfigurations signingConfigurations,
+            IDistributedCache _cache,
+            string refreshToken)
+        {
+            var cachedData = await _cache.GetStringAsync("refreshToken:" + refreshToken);
+
+            if (string.IsNullOrEmpty(cachedData))
+                throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+            var refreshTokenData = JsonSerializer.Deserialize<RefreshTokenData>(cachedData);
+
+            if (refreshTokenData == null || refreshTokenData.ID != userIdentity.UserId)
+                throw new UnauthorizedAccessException("Invalid refresh token data.");
+
+            var newToken = GenerateToken(userIdentity, tokenConfigurations, signingConfigurations, _cache);
+
             return newToken;
         }
 

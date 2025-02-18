@@ -8,25 +8,25 @@ using Microsoft.Extensions.Caching.Distributed;
 
 namespace JWTAuth.Controllers
 {
-    [Route("/account")]
+    [Route("/api/auth")]
     [ApiController]
-    public class UserController : Controller
+    public class AuthController : Controller
     {
         private readonly SigningConfigurations _signingConfigurations;
         private readonly TokenConfigurations _tokenConfigurations;
         private readonly ITokenService _tokenService;
         private readonly IGenericRepository<Entities.User, Models.User> _userRepository;
         private readonly IPasswordHasher _passwordHasher;
-        private readonly ILogger<UserController> _logger;
+        private readonly ILogger<AuthController> _logger;
         private readonly IDistributedCache _cache;
 
-        public UserController(
+        public AuthController(
             SigningConfigurations signingConfigurations,
             TokenConfigurations tokenConfigurations,
             IGenericRepository<Entities.User, Models.User> userRepository,
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
-            ILogger<UserController> logger,
+            ILogger<AuthController> logger,
             IDistributedCache cache)
         {
             _signingConfigurations = signingConfigurations;
@@ -42,7 +42,7 @@ namespace JWTAuth.Controllers
         [HttpPost]
         [Route("login")]
         [AllowAnonymous]
-        public async Task<ActionResult<ApiResponse<dynamic>>> Authenticate(Login credentials)
+        public async Task<IActionResult> Authenticate(Login credentials)
         {
             try
             {
@@ -102,7 +102,7 @@ namespace JWTAuth.Controllers
         [HttpPost]
         [Route("register")]
         [AllowAnonymous]
-        public async Task<ActionResult<dynamic>> RegisterUser(RegisterUser userModel)
+        public async Task<IActionResult> RegisterUser(RegisterUser userModel)
         {
             try
             {
@@ -149,6 +149,7 @@ namespace JWTAuth.Controllers
         }
 
         [HttpPost("refresh-token")]
+        [Authorize]
         public async Task<IActionResult> RefreshToken(RefreshToken model)
         {
             var userIdClaim = User.FindFirst("UserId")?.Value;
@@ -164,7 +165,6 @@ namespace JWTAuth.Controllers
             }
 
             var userId = long.Parse(userIdClaim);
-
             var user = _userRepository.FindBy(c => c.UserId == userId).FirstOrDefault();
 
             if (user == null)
@@ -185,8 +185,20 @@ namespace JWTAuth.Controllers
 
             var refreshedToken = await _tokenService.RefreshTokenAsync(userEntity, _tokenConfigurations, _signingConfigurations, _cache, model.refreshToken);
 
+            if (refreshedToken == null)
+            {
+                await RemoveRefreshToken(model.refreshToken);
+                return Unauthorized(new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Refresh token inválido ou expirado",
+                    Data = null
+                });
+            }
+
             return Ok(refreshedToken);
         }
+
 
         [HttpGet]
         [Route("profile")]
@@ -242,5 +254,42 @@ namespace JWTAuth.Controllers
             }
         }
 
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout(RefreshToken model)
+        {
+            try
+            {
+                await RemoveRefreshToken(model.refreshToken);
+
+                Response.Cookies.Delete("AccessToken");
+
+                return Ok(new ApiResponse<dynamic>
+                {
+                    Success = true,
+                    Message = "Logout realizado com sucesso",
+                    Data = null
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao fazer logout");
+                return StatusCode(500, new ApiResponse<dynamic>
+                {
+                    Success = false,
+                    Message = "Erro interno no servidor",
+                    Error = ex.Message
+                });
+            }
+        }
+
+
+        private async Task RemoveRefreshToken(string refreshToken)
+        {
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                await _cache.RemoveAsync(refreshToken);
+            }
+        }
     }
 }
