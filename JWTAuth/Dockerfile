@@ -9,13 +9,13 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["server/JWTAuth/JWTAuth.csproj", "server/JWTAuth/"]
-COPY ["server/JWTAuth.Core/JWTAuth.Core.csproj", "server/JWTAuth.Core/"]
-COPY ["server/JWTAuth.Db/JWTAuth.Db.csproj", "server/JWTAuth.Db/"]
-COPY ["server/JWTAuth.Entities/JWTAuth.Entities.csproj", "server/JWTAuth.Entities/"]
-RUN dotnet restore "./server/JWTAuth/JWTAuth.csproj"
+COPY ["JWTAuth/JWTAuth.csproj", "JWTAuth/"]
+COPY ["JWTAuth.Db/JWTAuth.Db.csproj", "JWTAuth.Db/"]
+COPY ["JWTAuth.Entities/JWTAuth.Entities.csproj", "JWTAuth.Entities/"]
+COPY ["JWTAuth.Services/JWTAuth.Core.csproj", "JWTAuth.Services/"]
+RUN dotnet restore "./JWTAuth/JWTAuth.csproj"
 COPY . .
-WORKDIR "/src/server/JWTAuth"
+WORKDIR "/src/JWTAuth"
 RUN dotnet build "./JWTAuth.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
