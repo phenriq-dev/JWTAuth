@@ -7,12 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JWTAuth", "JWTAuth\JWTAuth.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JWTAuth.Entities", "JWTAuth.Entities\JWTAuth.Entities.csproj", "{BE75B0A7-6CB6-4EC9-90E5-E2EEB3699D0B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JWTAuth.Core", "JWTAuth.Services\JWTAuth.Core.csproj", "{EA5A2B26-749F-4130-BED6-04FA16BBF53B}"
-	ProjectSection(ProjectDependencies) = postProject
-		{DEC860DD-AA42-41CF-9885-33C774A2CC93} = {DEC860DD-AA42-41CF-9885-33C774A2CC93}
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JWTAuth.Db", "JWTAuth.Db\JWTAuth.Db.csproj", "{DEC860DD-AA42-41CF-9885-33C774A2CC93}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JWTAuth.Core", "JWTAuth.Core\JWTAuth.Core.csproj", "{EC5A7363-B4E5-47F8-9CEF-79604E2FDDC5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,14 +25,14 @@ Global
 		{BE75B0A7-6CB6-4EC9-90E5-E2EEB3699D0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE75B0A7-6CB6-4EC9-90E5-E2EEB3699D0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE75B0A7-6CB6-4EC9-90E5-E2EEB3699D0B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EA5A2B26-749F-4130-BED6-04FA16BBF53B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EA5A2B26-749F-4130-BED6-04FA16BBF53B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EA5A2B26-749F-4130-BED6-04FA16BBF53B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EA5A2B26-749F-4130-BED6-04FA16BBF53B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DEC860DD-AA42-41CF-9885-33C774A2CC93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DEC860DD-AA42-41CF-9885-33C774A2CC93}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DEC860DD-AA42-41CF-9885-33C774A2CC93}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DEC860DD-AA42-41CF-9885-33C774A2CC93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC5A7363-B4E5-47F8-9CEF-79604E2FDDC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC5A7363-B4E5-47F8-9CEF-79604E2FDDC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC5A7363-B4E5-47F8-9CEF-79604E2FDDC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC5A7363-B4E5-47F8-9CEF-79604E2FDDC5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
