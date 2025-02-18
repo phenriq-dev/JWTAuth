@@ -6,7 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>fb314d42-3b25-4cb0-92d5-8f32766300e3</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>..\..</DockerfileContext>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,12 +26,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.2" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.6" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JWTAuth.Core\JWTAuth.Core.csproj" />
     <ProjectReference Include="..\JWTAuth.Db\JWTAuth.Db.csproj" />
+    <ProjectReference Include="..\JWTAuth.Services\JWTAuth.Core.csproj" />
   </ItemGroup>
 
 </Project>
