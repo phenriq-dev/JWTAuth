@@ -68,7 +68,7 @@ namespace JWTAuth.Core.Services.Jwt.Manager
 
             if (!string.IsNullOrEmpty(refreshToken))
             {
-                _cache.Remove($"refreshToken:{userIdentity.UserId}");
+                RemoveRefreshToken(_cache, userIdentity.UserId).Wait();
             }
 
             _cache.SetString($"refreshToken:{userIdentity.UserId}", JsonSerializer.Serialize(refreshTokenData), cacheOptions);
@@ -93,11 +93,21 @@ namespace JWTAuth.Core.Services.Jwt.Manager
             if (refreshTokenData == null || refreshTokenData.ID != userIdentity.UserId)
                 throw new UnauthorizedAccessException("Invalid refresh token data.");
 
+            await RemoveRefreshToken(_cache, userIdentity.UserId);
+
             var newToken = GenerateToken(userIdentity, tokenConfigurations, signingConfigurations, _cache);
 
             return newToken;
         }
+        public async Task RemoveRefreshToken(IDistributedCache _cache, long userId)
+        {
+            var tokenKey = $"refreshToken:{userId}";
 
+            if (!string.IsNullOrEmpty(tokenKey))
+            {
+                await _cache.RemoveAsync(tokenKey);
+            }
+        }
 
     }
 }

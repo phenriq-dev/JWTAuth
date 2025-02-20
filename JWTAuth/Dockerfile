@@ -12,7 +12,7 @@ WORKDIR /src
 COPY ["JWTAuth/JWTAuth.csproj", "JWTAuth/"]
 COPY ["JWTAuth.Db/JWTAuth.Db.csproj", "JWTAuth.Db/"]
 COPY ["JWTAuth.Entities/JWTAuth.Entities.csproj", "JWTAuth.Entities/"]
-COPY ["JWTAuth.Services/JWTAuth.Core.csproj", "JWTAuth.Services/"]
+COPY ["JWTAuth.Core/JWTAuth.Core.csproj", "JWTAuth.Core/"]
 RUN dotnet restore "./JWTAuth/JWTAuth.csproj"
 COPY . .
 WORKDIR "/src/JWTAuth"

@@ -2,14 +2,14 @@
 using JWTAuth.Core.Services.Jwt;
 using JWTAuth.Core.Services.Jwt.Models;
 using JWTAuth.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace JWTAuth.Controllers
 {
-    [Route("/api/auth")]
-    [ApiController]
     public class AuthController : Controller
     {
         private readonly SigningConfigurations _signingConfigurations;
@@ -38,11 +38,15 @@ namespace JWTAuth.Controllers
             _cache  = cache;
         }
 
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
 
         [HttpPost]
-        [Route("login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Authenticate(Login credentials)
+        public async Task<IActionResult> Login(Login credentials)
         {
             try
             {
@@ -50,12 +54,8 @@ namespace JWTAuth.Controllers
 
                 if (userModel == null || !_passwordHasher.VerifyPassword(userModel.Password, credentials.Password))
                 {
-                    return NotFound(new ApiResponse<dynamic>
-                    {
-                        Success = false,
-                        Message = "Usuário ou senha inválidos",
-                        Data = null
-                    });
+                    ViewBag.ErrorMessage = "Usuario ou senha inválidos";
+                    return View();
                 }
 
                 var userEntity = new Entities.User
@@ -66,8 +66,6 @@ namespace JWTAuth.Controllers
 
                 var token = _tokenService.GenerateToken(userEntity, _tokenConfigurations, _signingConfigurations, _cache);
 
-                userModel.Password = "";
-
                 Response.Cookies.Append("AccessToken", token.accessToken, new CookieOptions
                 {
                     HttpOnly = true,
@@ -75,46 +73,38 @@ namespace JWTAuth.Controllers
                     Expires = DateTime.UtcNow.AddSeconds(_tokenConfigurations.Seconds)
                 });
 
-                return Ok(new ApiResponse<dynamic>
-                {
-                    Success = true,
-                    Message = "Autenticação realizada com sucesso",
-                    Data = new
-                    {
-                        user = userModel,
-                        token = token
-                    }
-                });
+                return RedirectToAction("Index", "Home");
             }
             catch (Exception ex) 
             {
                 _logger.LogError(ex, "Erro ao autenticar o usuário");
-                return StatusCode(500, new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Erro interno no servidor",
-                    Error = ex.Message
-                });
+                ViewBag.ErrorMessage = "Erro interno no servidor";
+                return View();
             }
 
         }
 
-        [HttpPost]
-        [Route("register")]
+        [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> RegisterUser(RegisterUser userModel)
+        public IActionResult Register()
+        {
+            return View(); 
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register(RegisterUser userModel)
         {
             try
             {
                 var existingUser = _userRepository.FindBy(c => c.Username.ToLower() == userModel.Username.ToLower()).FirstOrDefault();
                 if (existingUser != null)
                 {
-                    return BadRequest(new ApiResponse<dynamic>
+                    if (existingUser != null)
                     {
-                        Success = false,
-                        Message = "Nome de usuário já existe",
-                        Data = null
-                    });
+                        ViewBag.ErrorMessage = "Nome de usuário já existe";
+                        return View();
+                    }
                 }
 
                 string hashedPassword = _passwordHasher.HashPassword(userModel.Password);
@@ -127,83 +117,71 @@ namespace JWTAuth.Controllers
 
                 _userRepository.Add(newUser);
 
-                newUser.Password = "";
-
-                return Ok(new ApiResponse<dynamic>
-                {
-                    Success = true,
-                    Message = "Usuário registrado com sucesso",
-                    Data = newUser
-                });
+                return RedirectToAction("Login");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao registrar usuário");
-                return StatusCode(500, new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Erro interno no servidor",
-                    Error = ex.Message
-                });
+                ViewBag.ErrorMessage = "Erro interno no servidor";
+                return View();
             }
         }
 
-        [HttpPost("refresh-token")]
-        [Authorize]
-        public async Task<IActionResult> RefreshToken(RefreshToken model)
-        {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
+        //[HttpPost]
+        //[Authorize]
+        //public async Task<IActionResult> RefreshToken(RefreshToken model)
+        //{
+        //    var userIdClaim = User.FindFirst("UserId")?.Value;
 
-            if (string.IsNullOrEmpty(userIdClaim))
-            {
-                return Unauthorized(new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Token inválido",
-                    Data = null
-                });
-            }
+        //    if (string.IsNullOrEmpty(userIdClaim))
+        //    {
+        //        return Unauthorized(new ApiResponse<dynamic>
+        //        {
+        //            Success = false,
+        //            Message = "Token inválido",
+        //            Data = null
+        //        });
+        //    }
 
-            var userId = long.Parse(userIdClaim);
-            var user = _userRepository.FindBy(c => c.UserId == userId).FirstOrDefault();
+        //    var userId = long.Parse(userIdClaim);
+        //    var user = _userRepository.FindBy(c => c.UserId == userId).FirstOrDefault();
 
-            if (user == null)
-            {
-                return NotFound(new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Usuário não encontrado",
-                    Data = null
-                });
-            }
+        //    if (user == null)
+        //    {
+        //        return NotFound(new ApiResponse<dynamic>
+        //        {
+        //            Success = false,
+        //            Message = "Usuário não encontrado",
+        //            Data = null
+        //        });
+        //    }
 
-            var userEntity = new Entities.User
-            {
-                UserId = user.UserId,
-                Username = user.Username
-            };
+        //    var userEntity = new Entities.User
+        //    {
+        //        UserId = user.UserId,
+        //        Username = user.Username
+        //    };
 
-            var refreshedToken = await _tokenService.RefreshTokenAsync(userEntity, _tokenConfigurations, _signingConfigurations, _cache, model.refreshToken);
+        //    var refreshedToken = await _tokenService.RefreshTokenAsync(userEntity, _tokenConfigurations, _signingConfigurations, _cache, model.refreshToken);
 
-            if (refreshedToken == null)
-            {
-                await RemoveRefreshToken(model.refreshToken);
-                return Unauthorized(new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Refresh token inválido ou expirado",
-                    Data = null
-                });
-            }
+        //    if (refreshedToken == null)
+        //    {
+        //        await RemoveRefreshToken(model.refreshToken);
+        //        return Unauthorized(new ApiResponse<dynamic>
+        //        {
+        //            Success = false,
+        //            Message = "Refresh token inválido ou expirado",
+        //            Data = null
+        //        });
+        //    }
 
-            return Ok(refreshedToken);
-        }
+        //    return Ok(refreshedToken);
+        //}
 
 
         [HttpGet]
-        [Route("profile")]
         [Authorize]
-        public IActionResult GetUserProfile()
+        public IActionResult Profile()
         {
             try
             {
@@ -211,85 +189,62 @@ namespace JWTAuth.Controllers
 
                 if (string.IsNullOrEmpty(userIdClaim))
                 {
-                    return Unauthorized(new ApiResponse<dynamic>
-                    {
-                        Success = false,
-                        Message = "Token inválido",
-                        Data = null
-                    });
+                    return RedirectToAction("Login");
                 }
 
                 var userId = long.Parse(userIdClaim);
-
                 var user = _userRepository.FindBy(c => c.UserId == userId).FirstOrDefault();
 
                 if (user == null)
                 {
-                    return NotFound(new ApiResponse<dynamic>
-                    {
-                        Success = false,
-                        Message = "Usuário não encontrado",
-                        Data = null
-                    });
+                    return RedirectToAction("Login");
                 }
 
                 user.Password = "";
 
-                return Ok(new ApiResponse<dynamic>
-                {
-                    Success = true,
-                    Message = "Perfil do usuário recuperado com sucesso",
-                    Data = user
-                });
+                return View(user);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao recuperar perfil do usuário");
-                return StatusCode(500, new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Erro interno no servidor",
-                    Error = ex.Message
-                });
+                ViewBag.ErrorMessage = "Erro interno no servidor";
+                return RedirectToAction("Login");
             }
         }
 
-        [HttpPost("logout")]
+        [HttpPost]
         [Authorize]
-        public async Task<IActionResult> Logout(RefreshToken model)
+        public async Task<IActionResult> Logout([FromServices] IDistributedCache cache)
         {
             try
             {
-                await RemoveRefreshToken(model.refreshToken);
+                var userIdClaim = User.FindFirst("UserId")?.Value;
+
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    _logger.LogWarning("Erro ao encontrar UserId");
+                }
+
+                var userId = long.Parse(userIdClaim);
 
                 Response.Cookies.Delete("AccessToken");
 
-                return Ok(new ApiResponse<dynamic>
-                {
-                    Success = true,
-                    Message = "Logout realizado com sucesso",
-                    Data = null
-                });
-            }
+                await cache.RemoveAsync($"refreshToken:{userId}");
+
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+                return RedirectToAction("Login");
+            }   
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erro ao fazer logout");
-                return StatusCode(500, new ApiResponse<dynamic>
-                {
-                    Success = false,
-                    Message = "Erro interno no servidor",
-                    Error = ex.Message
-                });
+                return RedirectToAction("Login");
             }
         }
 
-
-        private async Task RemoveRefreshToken(string refreshToken)
+        public IActionResult AccessDenied()
         {
-            if (!string.IsNullOrEmpty(refreshToken))
-            {
-                await _cache.RemoveAsync(refreshToken);
-            }
+            return RedirectToAction("Login");
         }
     }
 }

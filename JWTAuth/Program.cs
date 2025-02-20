@@ -4,10 +4,12 @@ using JWTAuth.Core.Services.Jwt;
 using JWTAuth.Core.Services.Jwt.Manager;
 using JWTAuth.Core.Services.Jwt.Models;
 using JWTAuth.Db.Context;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Shared;
 using StackExchange.Redis;
 using System.Text;
 
@@ -29,7 +31,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
-    // This lambda determines whether user consent for non-essential cookies is needed for a given request.
     options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
@@ -54,8 +55,7 @@ builder.Services.AddDbContext<DataContext>(options =>
         warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
 
-
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
 builder.Services.AddAuthorization();
 builder.Services.AddCors();
 
@@ -65,25 +65,42 @@ builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(x =>
-{
-    x.RequireHttpsMetadata = false;
-    x.SaveToken = true;
-    x.TokenValidationParameters = new TokenValidationParameters
+}).AddJwtBearer(x =>
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidIssuer = tokenConfigurations.Issuer,
-        ValidAudience = tokenConfigurations.Audience,
-        ClockSkew = TimeSpan.Zero
-    };
+        x.RequireHttpsMetadata = false;
+        x.SaveToken = true;
+        x.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidIssuer = tokenConfigurations.Issuer,
+            ValidAudience = tokenConfigurations.Audience,
+            ClockSkew = TimeSpan.Zero
+        };
+    })
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.LoginPath = "/Auth/Login";
+    options.LogoutPath = "/Auth/Logout";
+    options.AccessDeniedPath = "/Auth/AccessDenied";
+    options.SlidingExpiration = true;
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
 });
 
 
 var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Cookies.ContainsKey("AccessToken"))
+    {
+        var token = context.Request.Cookies["AccessToken"];
+        context.Request.Headers.Append("Authorization", "Bearer " + token);
+    }
+    await next();
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -92,19 +109,26 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
-    //dbContext.Database.Migrate();
+    dbContext.Database.Migrate();
 }
 
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Auth}/{action=Login}/{id?}");
+});
+
 app.UseCors(x => x
     .AllowAnyOrigin()
     .AllowAnyMethod()
     .AllowAnyHeader());
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 
