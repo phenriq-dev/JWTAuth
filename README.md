@@ -59,11 +59,12 @@ git clone https://github.com/phenriq-dev/JWTAuth.git
 ```bash
 cd JWTAuth
 ```
-3. **Instale as dependências**:
+3. **Configure o appsettings.json** com suas credenciais de banco de dados e configurações de token.
+
+4. **Execute o Docker Compose** para iniciar os containers:
 ```bash
-dotnet restore
+docker-compose up --build
 ```
-4. **Configure o appsettings.json** com suas credenciais de banco de dados e configurações de token.
 
 5. A aplicação estará disponível em: `http://localhost:8080`.
 
