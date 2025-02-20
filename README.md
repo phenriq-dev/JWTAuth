@@ -1,5 +1,5 @@
 
-# JWT Authentication API - ASP.NET Core
+# JWT Authentication with ASP.NET Core
 
   
 
@@ -7,7 +7,9 @@
 
   
 
-Este é um exemplo de implementação de autenticação baseada em JWT (JSON Web Token) usando **ASP.NET Core**. O projeto demonstra como proteger endpoints com tokens JWT, uma prática comum em projetos de APIs RESTful. Ele foi desenvolvido com o propósito de praticar e demonstrar habilidades com autenticação segura e controle de acesso em aplicações **backend**.
+Este projeto implementa autenticação JWT em uma aplicação ASP.NET Core, com interface de usuário simples para login, logout e registro de usuários. A autenticação é realizada usando tokens JWT, e as senhas são protegidas com BCrypt.
+
+A aplicação também é empacotada com **Docker**, usando **Docker Compose** para configurar os containers do PostgreSQL, Redis e a própria aplicação.
 
   
 
@@ -15,54 +17,42 @@ Este é um exemplo de implementação de autenticação baseada em JWT (JSON Web
 
   
 
--  **C#**
+- **ASP.NET Core**
 
--  **ASP.NET Core**
-
--  **JWT (JSON Web Token)**
-
--  **Dependency Injection (DI)**
-
--  **Token Validation**
-
--  **REST API**
-
+- **JWT**
+- **BCrypt**
+- **Entity Framework Core**
+- **PostgreSQL**
+- **Redis** (para armazenamento de sessões, por exemplo)
+- **Docker** e **Docker Compose**
+- **HTML** e **CSS**
   
 
 ## 🚀 Funcionalidades
 
-  
+- **Autenticação de usuários com JWT:** Permite login, registro e logout de usuários utilizando tokens JWT para autenticação.
 
-- Autenticação de usuários por meio de login utilizando JWT.
+- **Geração de tokens de acesso e refresh:** Gera tokens de acesso para login e tokens de refresh para reautenticação segura.
 
-- Geração de tokens de acesso e refresh.
+- **Armazenamento de tokens:**
+  - **AccessToken:** O token de acesso é armazenado de forma segura em cookies no navegador do usuário.
+  - **RefreshToken:** O token de refresh é armazenado no Redis, permitindo revalidação de sessão de maneira eficiente e segura.
 
-- Controle de acesso para endpoints protegidos por JWT.
+- **Proteção de páginas:** A página Home (Index) e outras rotas são protegidas, sendo acessíveis apenas por usuários autenticados.
 
-- Implementação modular usando **Injeção de Dependência (DI)** para serviços JWT.
+- **Hashing de senhas com BCrypt:** As senhas dos usuários são armazenadas de forma segura utilizando o algoritmo BCrypt.
+
+- **Armazenamento de dados com Entity Framework Core:** Utiliza o Entity Framework Core para gerenciar dados do usuário e sessões, com suporte a PostgreSQL.
 
 ## 🔑 Instalação e Execução
 
-  
 
-### Pré-requisitos
-
-  
-
-- .NET 7.0 SDK ou superior
-
-- IDE (como Visual Studio ou VS Code)
-
-  
-
-### Passos para executar o projeto localmente
-
-  
+### Como Executar com Docker
 
 1.  **Clone o repositório**:
 
 ```bash
-git clone https://github.com/seu-usuario/jwt-auth-example.git
+git clone https://github.com/phenriq-dev/JWTAuth.git
 ```
 
 2. **Navegue até o diretório do projeto**:
@@ -73,98 +63,21 @@ cd JWTAuth
 ```bash
 dotnet restore
 ```
-4. **Configure o appsettings.json**: No arquivo `appsettings.json`, adicione suas configurações de `TokenConfigurations`:
-```bash
-{
-  "TokenConfigurations": {
-    "Audience": "SeuPublico",
-    "Issuer": "SeuEmissor",
-    "Seconds": 3600
-  }
-}
-```
-5. **Execute a aplicação**:
-```bash
-dotnet run
-```
-6. **Acesse a aplicação**: A API estará rodando em https://localhost:5001.
+4. **Configure o appsettings.json** com suas credenciais de banco de dados e configurações de token.
 
-## 📂 Estrutura do Projeto
-
-```bash
-├── Controllers
-│   └── UserController.cs      # Controlador de autenticação e geração de token JWT
-├── Models
-│   └── User.cs                # Modelo de dados do usuário
-├── Repositories
-│   └── UserRepository.cs      # Repositório para simular busca de usuários (pode ser modificado para usar banco de dados real)
-├── Services
-│   ├── Jwt
-│   │   ├── Interfaces
-│   │   │   ├── ITokenService.cs  # Interface para o serviço de token
-│   │   ├── Manager
-│   │   │   └── TokenService.cs   # Implementação da lógica de geração de tokens JWT
-│   │   ├── Models
-│   │   │   ├── TokenConfigurations.cs # Configurações de token JWT
-│   │   └── SigningConfigurations.cs  # Configurações de assinatura e validação de tokens
-├── Program.cs                 # Configuração da aplicação e registro de serviços
-└── appsettings.json           # Configurações de Token
-```
-
-## 🔐 Endpoints da API
-### `POST /account/login`
-
-Realiza a autenticação do usuário e gera um token JWT.
-
-- **Request**: 
-```json 
-{ 
-  "username": "batman", 
-  "password": "batman"
-}
- ```
- - **Response**: 
-```json 
-{
-  "user": {
-    "id": 1,
-    "username": "batman",
-    "password": ""
-  },
-  "token": {
-    "authenticated": true,
-    "created": "2024-xx-xx xx:00:00",
-    "expiration": "2024-xx-xx xx:00:00",
-    "accessToken": "eyJhbGc...restodoToken",
-    "refreshToken": "uniqueRefreshTokenValue"
-  }
-}
- ```
+5. A aplicação estará disponível em: `http://localhost:8080`.
 
 ## 🌟 O que eu aprendi
 
--   **Implementação de JWT**: Aprendi como gerar e validar tokens JWT para autenticar usuários e proteger endpoints de APIs.
-
--   **Injeção de Dependência**: Utilizei DI para garantir que os serviços sejam facilmente testáveis e gerenciáveis.
-
--   **Segurança**: Apliquei boas práticas para assegurar que informações sensíveis, como senhas, não sejam expostas.
+-   **Autenticação com JWT:** Aprendi a gerar e validar tokens JWT para autenticar usuários e proteger rotas da aplicação.
+- **Injeção de Dependência (DI):** Utilizei DI para facilitar o gerenciamento e testes dos serviços na aplicação.
+- **Boas práticas de segurança:** Apliquei técnicas de segurança como hashing de senhas (BCrypt) e armazenamento seguro de tokens (cookies e Redis).
 
 
 ## 🚀 Melhorias Futuras
 
-- Implementar **Redis** para gerenciamento de sessões de usuários, proporcionando armazenamento em memória, escalabilidade e expiração automática de sessões.
-
-- Adicionar suporte a **refresh tokens** para melhorar a experiência do usuário e a segurança.
-
-- Criar uma interface de usuário para facilitar a interação com a API.
-
-- Implementar testes automatizados para garantir a estabilidade do código.
-
--  Implementar um **banco de dados real** para gerenciamento de usuários.
-
--  Implementar um sistema de **hashing de senhas** (como o **BCrypt**) para garantir que as senhas armazenadas sejam seguras.
-
-- **Dockerizar** a aplicação para facilitar a implantação e garantir a consistência entre ambientes de desenvolvimento e produção.
+- **Suporte a refresh tokens:** Melhorar a experiência de usuário com suporte à renovação de tokens, permitindo a manutenção da sessão sem necessidade de reautenticação.
+- **Testes automatizados:** Adicionar testes unitários e de integração para garantir a estabilidade e qualidade do código.
 
 ## 🤝 Contribuições
 
